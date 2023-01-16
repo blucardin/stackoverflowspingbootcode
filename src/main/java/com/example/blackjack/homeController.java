@@ -9,9 +9,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 // import SimpMessagingTemplate
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import reactor.core.publisher.Flux;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,6 +23,7 @@ import java.sql.Statement;
 import java.time.Duration;
 
 import java.util.Map;
+
 
 @CrossOrigin(origins = "*")
 @Controller
@@ -79,15 +83,30 @@ public class homeController {
         ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
         // if the room exists
         if (rs.next()) {
+            String roomID = rs.getString("id");
+            String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
 
-            model.addAttribute("id", rs.getString("id"));
+            model.addAttribute("id", roomID);
             
-            model.addAttribute("sub", identifyer.getPrincipal().getAttributes().get("sub").toString());
+            model.addAttribute("sub", sub);
+
+            // insert the player into the database
+            // statement.executeUpdate("insert into player (id, room_id) values('" + sub + "', " + roomID + ")");
 
             return "game";
         }
         // if the room doesn't exist, return the home page
         return "index";
+    }
+
+    @ResponseBody
+    @GetMapping(value = "/cards", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter cards(String id) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+        System.out.println("Direct Hit!!!");
+        engines++;
+        emitter.send("cards" + engines + id);
+        return emitter;
     }
 
     @GetMapping("/output")
