@@ -21,12 +21,7 @@
   <body>
     <h1>Create A Room</h1>
     <p th:text="${ 'Code :' + id}"></p>
-    <form action="/game" method="post">
-      <input type="hidden" name="id" th:value="${id}"/>
-      <input type="hidden" name="dealer" value="true"/>
-      <input type="submit" value="Start Game"/>
-    </form>
-    <!-- create a new link tag -->
-    <a th:href="${ '/game?code=' + id}">Join A Room</a>
+
+    <a th:href="${ '/game?id=' + id}">Room Link</a>
   </body>
 </html>

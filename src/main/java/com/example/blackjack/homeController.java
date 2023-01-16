@@ -1,15 +1,13 @@
 package com.example.blackjack;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 // import SimpMessagingTemplate
 
 import reactor.core.publisher.Flux;
@@ -20,7 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
-import java.util.concurrent.Executors;
+
+import java.util.Map;
 
 @CrossOrigin(origins = "*")
 @Controller
@@ -28,9 +27,7 @@ public class homeController {
 
     static Connection connection = null;
     static Statement statement = null;
-
-    @Autowired
-    private SimpMessagingTemplate template;
+    public static volatile int engines = 0; // number of engines running
 
     @EventListener(ApplicationReadyEvent.class)
     public void doSomethingAfterStartup() throws ClassNotFoundException, SQLException {  
@@ -44,9 +41,9 @@ public class homeController {
         // create room table with text locked, id int autoincrementing, and turn int
         statement.executeUpdate("create table room (id integer primary key autoincrement, locked text not null, turn integer)");
 
-        // create a new player in the database with id, name, and room id
         statement.executeUpdate("drop table if exists player");
-        statement.executeUpdate("create table player (id integer primary key autoincrement, name text not null, room_id integer not null, foreign key(room_id) references room(id))");
+        // create player table with text name, id int, and room_id int
+        statement.executeUpdate("create table player (id integer primary key, room_id integer)");
       }
 
     @GetMapping("/home")
@@ -68,21 +65,29 @@ public class homeController {
         return "create";
     }
 
-    // create a mapping for the join page, when GET request is made adds the player to the player database with the id and return join.html, 
-    @GetMapping("/game")
+    // create a mapping for the join page
+    @GetMapping("/join")
     public String join(Model model) throws SQLException {
-        // create a new player in the database
-        statement.executeUpdate("insert into player (name, room_id) values('player', 1)", Statement.RETURN_GENERATED_KEYS);
-        ResultSet rs = statement.getGeneratedKeys();
-        System.out.println(rs.getString(1));
-        model.addAttribute("id", rs.getString(1));//rs.getInt("id"));
+        // return the join page
         return "join";
     }
 
-    // create a mapping for the game 
-    @GetMapping("/join")
-    public String game() {
-        return "join";
+    // create a mapping for the room page with the id as a parameter
+    @GetMapping("/game")
+    public String room(Model model, String id, OAuth2AuthenticationToken identifyer) throws SQLException {
+        // get the room from the database
+        ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
+        // if the room exists
+        if (rs.next()) {
+
+            model.addAttribute("id", rs.getString("id"));
+            
+            model.addAttribute("sub", identifyer.getPrincipal().getAttributes().get("sub").toString());
+
+            return "game";
+        }
+        // if the room doesn't exist, return the home page
+        return "index";
     }
 
     @GetMapping("/output")
