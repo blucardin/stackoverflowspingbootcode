@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!-- welcome the player to the game and start polling for cards -->
+    <head>
+        <meta charset="UTF-8"/>
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Game</title>
+        <script th:inline="javascript">
+        /*<![CDATA[*/
+        var id = /*[[${id}]]*/ 'default';
+        var source = new EventSource("/cards/" + id);
+        source.onmessage = function(event) {
+            var data = JSON.parse(event.data);
+            var card = document.createElement("p");
+            card.innerText = data.card;
+            document.body.appendChild(card);
+        };
+        /*]]>*/
+        </script>
+    </head>
+    <body>
+        <h1>Game</h1>
+        <p th:text="${ 'Code :' + id}"></p>
+        <!-- <form action="/cards" method="post">
+        <input type="hidden" name="id" th:value="${id}"/>
+        <input type="hidden" name="dealer" th:value="${dealer}"/>
+        <input type="hidden" name="player" th:value="${player}"/>
+        <input type="submit" value="Draw Card"/>
+        </form> -->
+    </body>
+
+</html>

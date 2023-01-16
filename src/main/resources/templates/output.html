@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Example</title>
+</head>
+<body>
+
+<div id="output"></div>
+
+<script>
+    var source = new EventSource("/sse");
+    source.onmessage = function(event) {
+        var output = document.getElementById("output");
+        var para = document.createElement("p");
+        console.log(event.data);
+        para.innerHTML = event.data;
+        output.appendChild(para);
+    };
+</script>
+
+</body>
+</html>

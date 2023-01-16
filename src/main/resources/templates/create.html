@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Create A Room</title>
+        <!-- repeatably call jquery post request to /players and alert the data response -->
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+    var id = /*[[${id}]]*/ 'default';
+    var source = new EventSource("/players/" + id);
+    source.onmessage = function(event) {
+        var data = JSON.parse(event.data);
+        var player = document.createElement("p");
+        player.innerText = data.player;
+        document.body.appendChild(player);
+    };
+    /*]]>*/
+    </script>
+  </head>
+  <body>
+    <h1>Create A Room</h1>
+    <p th:text="${ 'Code :' + id}"></p>
+    <form action="/game" method="post">
+      <input type="hidden" name="id" th:value="${id}"/>
+      <input type="hidden" name="dealer" value="true"/>
+      <input type="submit" value="Start Game"/>
+    </form>
+    <!-- create a new link tag -->
+    <a th:href="${ '/game?code=' + id}">Join A Room</a>
+  </body>
+</html>
