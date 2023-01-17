@@ -8,12 +8,23 @@
         <script th:inline="javascript">
         /*<![CDATA[*/
         var id = /*[[${id}]]*/ 'default';
-        var source = new EventSource("/cards/" + id);
+        var source = new EventSource("/personalcards?id=" + id);
         source.onmessage = function(event) {
-            var data = JSON.parse(event.data);
-            var card = document.createElement("p");
-            card.innerText = data.card;
-            document.body.appendChild(card);
+            if (event.data != "") {
+                var data = JSON.parse(event.data);
+                console.log(data);
+                var cards = data.cards;
+                for (var i = 0; i < cards.length; i++) {
+                    var div = document.createElement("div");
+                    div.innerHTML = cards[i];
+                    document.body.appendChild(div);
+                }
+
+                source.close();
+            }
+            else {
+                console.log("No cards yet");
+            }
         };
         /*]]>*/
         </script>

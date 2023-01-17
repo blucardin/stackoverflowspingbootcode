@@ -23,5 +23,10 @@
     <p th:text="${ 'Code :' + id}"></p>
 
     <a th:href="${ '/game?id=' + id}">Room Link</a>
+
+    <form action="/start" method="get">
+      <input type="hidden" name="id" th:value="${id}"/>
+      <input type="submit" value="Start Game"/>
+    </form>
   </body>
 </html>

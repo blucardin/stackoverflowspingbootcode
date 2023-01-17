@@ -5,13 +5,16 @@ public class Room {
     public BlackJackEngine engine = new BlackJackEngine();
     public int id;
     public boolean locked;
+    public String dealersub;
 
     /**
      * Constructor for room class
      * @param id id of the room
+     * @param dealersub dealer identification
      */
-    Room(int id) {
+    Room(int id, String dealersub) {
         this.id = id;
         this.locked = false;
+        this.dealersub = dealersub;
     }
 }
