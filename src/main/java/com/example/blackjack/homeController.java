@@ -172,7 +172,7 @@ public class homeController {
                     for (int j = 0; j < table.size(); j++) {
 
                         payload += "\"" + table.get(j).getName() + "\": [" ;
-                        payload += "\"" + "unknown" + "\"" ;
+                        payload += "\"" + "unknown" + "\"," ;
                         for (int k = 1; k < table.get(j).getHand().size(); k++) {
                             payload += "\"" + table.get(j).getHand().get(k).getName() + "\"" ;
                             if (k != table.get(j).getHand().size() - 1) {
