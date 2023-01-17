@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.example.blackjack.Player.Status;
+
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
@@ -180,6 +182,7 @@ public class homeController {
                         }
                         player.put("Cards", cards);
                         player.put("Username", table.get(j).getUsername());
+                        player.put("Status", table.get(j).getStatus());
                         jo.put(table.get(j).getName(), player);
                     }
                     payload = jo.toString();
@@ -197,9 +200,8 @@ public class homeController {
 
     @ResponseBody
     @GetMapping(value = "/getTurn", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter getTurn(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+    public SseEmitter getTurn(String id) throws IOException{
         SseEmitter emitter = new SseEmitter();
-        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
 
         for (int i = 0; i < rooms.size(); i++) {
 
@@ -216,6 +218,45 @@ public class homeController {
         emitter.send("");
         emitter.complete();
         return emitter;
+    }
+
+    @PostMapping("/hit")
+    public void hit(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                int turn = rooms.get(i).turn;
+                Player hittingplayer = rooms.get(i).engine.getPlayers().get(turn);
+                if (hittingplayer.getName() == sub){
+                    if (hittingplayer.getStatus() == Status.PLAYING) {
+
+                        rooms.get(i).engine.getPlayers().get(turn).hit(rooms.get(i).engine.dealCard());
+                    }
+                }
+            }
+        }
+    }
+
+    @PostMapping("/stand")
+    public void stand(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                int turn = rooms.get(i).turn;
+                Player standingplayer = rooms.get(i).engine.getPlayers().get(turn);
+                if (standingplayer.getName() == sub){
+                    if (standingplayer.getStatus() == Status.PLAYING) {
+                        rooms.get(i).engine.getPlayers().get(turn).stand();
+                    }
+                }
+            }
+        }
     }
 
     
