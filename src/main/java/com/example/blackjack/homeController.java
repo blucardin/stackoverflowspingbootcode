@@ -16,14 +16,11 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 
-import java.util.Map;
-
+import java.util.ArrayList;
 
 @CrossOrigin(origins = "*")
 @Controller
@@ -31,24 +28,7 @@ public class homeController {
 
     static Connection connection = null;
     static Statement statement = null;
-    public static volatile int engines = 0; // number of engines running
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void doSomethingAfterStartup() throws ClassNotFoundException, SQLException {  
-        // create a database connection
-        Class.forName("org.sqlite.JDBC");
-        connection = DriverManager.getConnection("jdbc:sqlite:database.db");
-        statement = connection.createStatement();
-        statement.setQueryTimeout(30);  // set timeout to 30 sec.
-
-        statement.executeUpdate("drop table if exists room");
-        // create room table with text locked, id int autoincrementing, and turn int
-        statement.executeUpdate("create table room (id integer primary key autoincrement, locked text not null, turn integer)");
-
-        statement.executeUpdate("drop table if exists player");
-        // create player table with text name, id int, and room_id int
-        statement.executeUpdate("create table player (id integer primary key, room_id integer)");
-      }
+    public static volatile ArrayList<Room> rooms = new ArrayList<Room>();    ; // number of engines running
 
     @GetMapping("/home")
     public String index() {
@@ -61,11 +41,8 @@ public class homeController {
         //statement.execute("insert into room (locked, turn) values('false', 0)", Statement.RETURN_GENERATED_KEYS);
         // get the new id
 
-        statement.executeUpdate("insert into room (locked, turn) values('false', 0)", Statement.RETURN_GENERATED_KEYS);
-        ResultSet rs = statement.getGeneratedKeys();
-        // }
-        System.out.println(rs.getString(1));
-        model.addAttribute("id", rs.getString(1));//rs.getInt("id"));
+        rooms.add(new Room(rooms.size()));
+        model.addAttribute("id", rooms.size() - 1);//rs.getInt("id"));
         return "create";
     }
 
@@ -80,23 +57,31 @@ public class homeController {
     @GetMapping("/game")
     public String room(Model model, String id, OAuth2AuthenticationToken identifyer) throws SQLException {
         // get the room from the database
-        ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
-        // if the room exists
-        if (rs.next()) {
-            String roomID = rs.getString("id");
-            String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+        //ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
+        System.out.println("id: " + id);
 
-            model.addAttribute("id", roomID);
-            
-            model.addAttribute("sub", sub);
+        for (int i = 0; i < rooms.size(); i++) {
+            System.out.println("room id: " + rooms.get(i).id);
 
-            // insert the player into the database
-            // statement.executeUpdate("insert into player (id, room_id) values('" + sub + "', " + roomID + ")");
+            if (rooms.get(i).locked == false && rooms.get(i).id == Integer.parseInt(id)) {
 
-            return "game";
+                String roomID = id;
+
+                String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+                //rooms.get(i).engine.addPlayer(sub, 0);
+                model.addAttribute("id", roomID);
+                
+                model.addAttribute("sub", sub);
+
+                // insert the player into the database
+                // statement.executeUpdate("insert into player (id, room_id) values('" + sub + "', " + roomID + ")");
+
+                return "game";
+            }
         }
         // if the room doesn't exist, return the home page
-        return "index";
+        return "index"; // TOTO: Create Error Page
     }
 
     @ResponseBody
@@ -104,8 +89,8 @@ public class homeController {
     public SseEmitter cards(String id) throws IOException{
         SseEmitter emitter = new SseEmitter();
         System.out.println("Direct Hit!!!");
-        engines++;
-        emitter.send("cards" + engines + id);
+        emitter.send("cards" + id);
+        emitter.complete();
         return emitter;
     }
 
