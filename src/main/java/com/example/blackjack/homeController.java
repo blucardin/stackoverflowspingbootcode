@@ -1,5 +1,7 @@
 package com.example.blackjack;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
@@ -89,8 +91,9 @@ public class homeController {
                 String roomID = id;
 
                 String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+                String name = identifyer.getPrincipal().getAttributes().get("name").toString();
 
-                rooms.get(i).engine.addPlayer(sub, 0); // TODO: Betting System
+                rooms.get(i).engine.addPlayer(sub, name, 0); // TODO: Betting System
 
                 //rooms.get(i).engine.addPlayer(sub, 0);
                 model.addAttribute("id", roomID);
@@ -165,30 +168,21 @@ public class homeController {
 
                 ArrayList<Player> table = rooms.get(i).engine.getPlayers();
                 String payload = "";
+                JSONObject jo = new JSONObject();
                 
                 if (table.size() > 0) {
-                    payload = "{ \"table\": {";
-                    // format the payload as an json array
                     for (int j = 0; j < table.size(); j++) {
-
-                        payload += "\"" + table.get(j).getName() + "\": [" ;
-                        payload += "\"" + "unknown" + "\"," ;
-                        for (int k = 1; k < table.get(j).getHand().size(); k++) {
-                            payload += "\"" + table.get(j).getHand().get(k).getName() + "\"" ;
-                            if (k != table.get(j).getHand().size() - 1) {
-                                payload += ",";
-                            }
+                        JSONObject player = new JSONObject();
+                        JSONArray cards = new JSONArray();
+                        for (int k = 0; k < table.get(j).getHand().size(); k++) {
+                            cards.put(table.get(j).getHand().get(k).getName());
                         }
-                        payload += "]";
-
-                        if (j != table.size() - 1) {
-                            payload += ",";
-                        }
+                        player.put("Cards", cards);
+                        player.put("Username", table.get(j).getUsername());
+                        jo.put(table.get(j).getName(), player);
                     }
-                    payload += "}}";
-
+                    payload = jo.toString();
                     System.out.println(payload);
-
                 }
 
                 emitter.send(payload);
@@ -200,5 +194,31 @@ public class homeController {
         emitter.complete();
         return emitter;
     }
+
+    @ResponseBody
+    @GetMapping(value = "/getTurn", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter getTurn(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                int turn = rooms.get(i).turn;
+                String payload = "";
+                
+                rooms.get(i).engine.getPlayers().get(turn).getName();
+
+                emitter.send(payload);
+                emitter.complete();
+                return emitter;
+            }
+        }
+        emitter.send("");
+        emitter.complete();
+        return emitter;
+    }
+
     
 }

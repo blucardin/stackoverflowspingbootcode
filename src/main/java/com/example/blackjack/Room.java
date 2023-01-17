@@ -6,6 +6,7 @@ public class Room {
     public int id;
     public boolean locked;
     public String dealersub;
+    public int turn = 0;
 
     /**
      * Constructor for room class
@@ -16,5 +17,6 @@ public class Room {
         this.id = id;
         this.locked = false;
         this.dealersub = dealersub;
+        this.turn = 0;
     }
 }

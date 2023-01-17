@@ -25,11 +25,11 @@
                 var source = new EventSource("/getTable?id=" + id);
                 source.onmessage = function(event) {
                     if (event.data != "") {
-                        var data = JSON.parse(event.data)["table"];
+                        var data = JSON.parse(event.data);
                         console.log(data);
                         for (var key in data) {
                             var div = document.createElement("div");
-                            div.innerHTML = key + ": " + data[key];
+                            div.innerHTML = data[key]["Username"] + ": " + data[key]["Cards"];
                             document.body.appendChild(div);
                         }
                         source.close();
