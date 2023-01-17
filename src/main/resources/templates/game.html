@@ -9,47 +9,72 @@
         /*<![CDATA[*/
         var id = /*[[${id}]]*/ 'default';
         var personalCards = new EventSource("/personalcards?id=" + id);
+        var personalCardData = "";
         personalCards.onmessage = function(event) {
-            if (event.data != "") {
-                var data = JSON.parse(event.data);
-                console.log(data);
-                var cards = data.cards;
+            if (event.data != "" && event.data != personalCardData) {
+                personalCardData = JSON.parse(event.data);
+                console.log(personalCardData);
+
+                var cards = personalCardData.cards;
+                var parent = document.getElementById("cards");
+                // clear the cards
+                parent.innerHTML = "";
+
                 for (var i = 0; i < cards.length; i++) {
                     var div = document.createElement("div");
                     div.innerHTML = cards[i];
-                    document.body.appendChild(div);
+                    parent.appendChild(div);
                 }
 
-                personalCards.close();
-
-                var source = new EventSource("/getTable?id=" + id);
-                source.onmessage = function(event) {
-                    if (event.data != "") {
-                        var data = JSON.parse(event.data);
-                        console.log(data);
-                        for (var key in data) {
-                            var div = document.createElement("div");
-                            div.innerHTML = data[key]["Username"] + ": " + data[key]["Cards"];
-                            document.body.appendChild(div);
-                        }
-                        source.close();
-                    }
-                    else {
-                        console.log("No table yet");
-                    }
+                var parent = document.getElementById("started");
+                if (parent.innerHTML == "Game Not Started"){
+                    parent.innerHTML = "Game Started";
                 }
-                
             }
             else {
                 console.log("No cards yet");
             }
         };
+
+        var tableData = "";
+        var source = new EventSource("/getTable?id=" + id);
+                source.onmessage = function(event) {
+
+                    if (event.data != "" && event.data != tableData) {
+                        var tableData = JSON.parse(event.data);
+                        console.log(tableData);
+                        var parent = document.getElementById("table");
+                        // clear the table
+                        parent.innerHTML = "";
+
+                        for (var key in tableData) {
+                            var div = document.createElement("div");
+                            div.innerHTML = tableData[key]["Username"] + ": ";
+                            for (var i = 0; i < tableData[key]["Cards"].length; i++) {
+                                div.innerHTML += tableData[key]["Cards"][i];
+                                if (i != tableData[key]["Cards"].length - 1) {
+                                    div.innerHTML += ", ";
+                                }
+                            }
+                            parent.appendChild(div);
+                        }
+                    }
+                    else {
+                        console.log("No table yet");
+                    }
+                }
         /*]]>*/
         </script>
     </head>
     <body>
         <h1>Game</h1>
         <p th:text="${ 'Code: ' + id}"></p>
+        <div id="started">Game Not Started</div>
+        <h4>Your Cards:</h4>
+        <div id="cards"></div>
+        <h4>The Table:</h4>
+        <div id="table"></div>
+        <div id="turn"></div>
         <!-- <form action="/cards" method="post">
         <input type="hidden" name="id" th:value="${id}"/>
         <input type="hidden" name="dealer" th:value="${dealer}"/>

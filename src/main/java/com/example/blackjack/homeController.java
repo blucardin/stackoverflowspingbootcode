@@ -174,7 +174,8 @@ public class homeController {
                     for (int j = 0; j < table.size(); j++) {
                         JSONObject player = new JSONObject();
                         JSONArray cards = new JSONArray();
-                        for (int k = 0; k < table.get(j).getHand().size(); k++) {
+                        cards.put("unknown");
+                        for (int k = 1; k < table.get(j).getHand().size(); k++) {
                             cards.put(table.get(j).getHand().get(k).getName());
                         }
                         player.put("Cards", cards);
@@ -182,7 +183,6 @@ public class homeController {
                         jo.put(table.get(j).getName(), player);
                     }
                     payload = jo.toString();
-                    System.out.println(payload);
                 }
 
                 emitter.send(payload);
@@ -206,9 +206,7 @@ public class homeController {
             if (rooms.get(i).id == Integer.parseInt(id)) {
 
                 int turn = rooms.get(i).turn;
-                String payload = "";
-                
-                rooms.get(i).engine.getPlayers().get(turn).getName();
+                String payload = rooms.get(i).engine.getPlayers().get(turn).getName();
 
                 emitter.send(payload);
                 emitter.complete();
