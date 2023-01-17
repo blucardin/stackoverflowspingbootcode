@@ -31,7 +31,7 @@ var source = new EventSource("/getTable?id=" + id);
         source.onmessage = function(event) {
 
             if (event.data != "" && event.data != tableData) {
-                var tableData = JSON.parse(event.data);
+                tableData = JSON.parse(event.data);
                 console.log(tableData);
                 var parent = document.getElementById("table");
                 // clear the table
@@ -53,3 +53,18 @@ var source = new EventSource("/getTable?id=" + id);
                 console.log("No table yet");
             }
         }
+
+// poll for the current turn and update the page with the username that is currently playing
+var turnData = "";
+var turn = new EventSource("/getTurn?id=" + id);
+turn.onmessage = function(event) {
+    if (event.data != "" && event.data != turnData) {
+        turnData = event.data;
+        console.log(turnData);
+        var parent = document.getElementById("turn");
+        parent.innerHTML = tableData[turnData]["Username"] + "'s Turn";
+    }
+    else {
+        console.log("No turn yet");
+    }
+}

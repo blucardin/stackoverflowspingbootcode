@@ -207,6 +207,12 @@ public class homeController {
 
             if (rooms.get(i).id == Integer.parseInt(id)) {
 
+                if (rooms.get(i).locked == false) {
+                    emitter.send("");
+                    emitter.complete();
+                    return emitter;
+                }
+                
                 int turn = rooms.get(i).turn;
                 String payload = rooms.get(i).engine.getPlayers().get(turn).getName();
 
