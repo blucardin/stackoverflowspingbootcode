@@ -143,7 +143,7 @@ public class homeController {
                         return emitter;
                     }
                 }
-                emitter.send("");
+                emitter.send(""); // TODO: Configure these empty strings as error messages to be handled by the client
                 emitter.complete();
                 return emitter;
             }
@@ -154,26 +154,51 @@ public class homeController {
     }
 
     @ResponseBody
-    @GetMapping(value = "/cards", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter cards(String id) throws IOException{
+    @GetMapping(value = "/getTable", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter getTable(String id, OAuth2AuthenticationToken identifyer) throws IOException{
         SseEmitter emitter = new SseEmitter();
-        System.out.println("Direct Hit!!!");
-        emitter.send("cards" + id);
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                ArrayList<Player> table = rooms.get(i).engine.getPlayers();
+                String payload = "";
+                
+                if (table.size() > 0) {
+                    payload = "{ \"table\": {";
+                    // format the payload as an json array
+                    for (int j = 0; j < table.size(); j++) {
+
+                        payload += "\"" + table.get(j).getName() + "\": [" ;
+                        payload += "\"" + "unknown" + "\"" ;
+                        for (int k = 1; k < table.get(j).getHand().size(); k++) {
+                            payload += "\"" + table.get(j).getHand().get(k).getName() + "\"" ;
+                            if (k != table.get(j).getHand().size() - 1) {
+                                payload += ",";
+                            }
+                        }
+                        payload += "]";
+
+                        if (j != table.size() - 1) {
+                            payload += ",";
+                        }
+                    }
+                    payload += "}}";
+
+                    System.out.println(payload);
+
+                }
+
+                emitter.send(payload);
+                emitter.complete();
+                return emitter;
+            }
+        }
+        emitter.send("");
         emitter.complete();
         return emitter;
     }
-
-    @GetMapping("/output")
-    public String output() {
-        return "output";
-    }
-
-    // create a players mapping that uses server side events with Flux to send the players in the room to the client
-    @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> handle() {
-        return Flux.interval(Duration.ofSeconds(1))
-                .map(i -> "Hello, " + i + "!")
-                .doOnSubscribe(s -> System.out.println("Subscribed"))
-                .doOnComplete(() -> System.out.println("Completed"));
-    }
+    
 }
