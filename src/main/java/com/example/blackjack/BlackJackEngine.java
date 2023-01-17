@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class BlackJackEngine {
-    private ArrayList<Player> players = new ArrayList<>(Arrays.asList(new Player("Dealer", 0)));
+    private ArrayList<Player> players = new ArrayList<>(Arrays.asList(new Player("Dealer, ", "Dealer", 0)));
     private ArrayList<Card> deck = new ArrayList<>();
 
     /**
@@ -81,10 +81,11 @@ public class BlackJackEngine {
     /**
      * Adds a player to the current list of players
      * @param name name of the player
+     * @param username username of the player
      * @param bet bet of the player
      */
-    public void addPlayer(String name, int bet) {
-        Player player = new Player(name, bet);
+    public void addPlayer(String name, String username, int bet) {
+        Player player = new Player(name, username, bet);
         players.add(player);
     }
 

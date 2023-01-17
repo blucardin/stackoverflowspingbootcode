@@ -17,6 +17,7 @@ public class Player {
     private ArrayList<Card> hand = new ArrayList<>();
     private int bet;
     private String name;
+    private String username;
     private Status status = Status.PLAYING;
     
 
@@ -25,9 +26,10 @@ public class Player {
      * @param name name of the player
      * @param bet bet of the player
      */
-    Player(String name, int bet) {
+    Player(String name, String username, int bet) {
         this.name = name;
         this.bet = bet;
+        this.username = username;
     }
 
     /**
@@ -52,6 +54,14 @@ public class Player {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * Sets the player's username for the game
+     * @param username player's new username
+     */
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     /**
@@ -84,6 +94,14 @@ public class Player {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Gets the player's username
+     * @return player's username
+     */
+    public String getUsername() {
+        return username;
     }
 
     /**
