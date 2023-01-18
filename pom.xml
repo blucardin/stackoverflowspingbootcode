@@ -15,6 +15,7 @@
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>17</java.version>
+        <!-- <spring-boot.repackage.skip>true</spring-boot.repackage.skip> -->
 	</properties>
 	<dependencies>
 		<dependency>
@@ -68,15 +69,15 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
-				<plugin>
-					<groupId>com.google.cloud.tools</groupId>
-					<artifactId>appengine-maven-plugin</artifactId>
-					<version>2.2.0</version>
-					<configuration>
-						<version>1</version>
-						<projectId>GCLOUD_CONFIG</projectId>
-					</configuration>
-				</plugin>
+                <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>appengine-maven-plugin</artifactId>
+                <version>2.4.4</version>
+                <configuration>
+                    <deploy.projectId>blackjack-375103</deploy.projectId>
+                    <deploy.version>1</deploy.version>
+                </configuration>
+                </plugin>
 		</plugins>
 	</build>
 
