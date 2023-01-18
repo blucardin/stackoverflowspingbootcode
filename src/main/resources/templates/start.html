@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!-- welcome the player to the game and start polling for cards -->
+    <head>
+        <meta charset="UTF-8"/>
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Start</title>
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            var id = /*[[${id}]]*/ 'default';
+
+            var tableData = "";
+            var source = new EventSource("/getTable?id=" + id);
+            source.onmessage = function(event) {
+
+                if (event.data != "" && event.data != tableData) {
+                    tableData = JSON.parse(event.data);
+                    console.log(tableData);
+                    var parent = document.getElementById("table");
+                    // clear the table
+                    parent.innerHTML = "";
+
+                    var players = tableData["Players"];
+                    for (var key in players) {
+                        var div = document.createElement("div");
+                        div.innerHTML = players[key]["Username"] + ": ";
+                        for (var i = 0; i < players[key]["Cards"].length; i++) {
+                            div.innerHTML += players[key]["Cards"][i];
+                            if (i != players[key]["Cards"].length - 1) {
+                                div.innerHTML += ", ";
+                            }
+                        }
+                        parent.appendChild(div);
+                    }
+                }
+                else {
+                    console.log("No table yet");
+                }
+            }  
+
+            /*]]>*/
+        </script>
+
+    </head>
+    <body>
+        <h1>Started</h1>
+        <p th:text="${ 'Code: ' + id}"></p>
+        <h4>The Table:</h4>
+        <div id="table"></div>
+    </body>
+
+</html>

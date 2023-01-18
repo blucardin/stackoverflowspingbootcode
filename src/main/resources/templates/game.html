@@ -8,25 +8,23 @@
         <script th:inline="javascript">
         /*<![CDATA[*/
         var id = /*[[${id}]]*/ 'default';
-        var source = new EventSource("/cards/" + id);
-        source.onmessage = function(event) {
-            var data = JSON.parse(event.data);
-            var card = document.createElement("p");
-            card.innerText = data.card;
-            document.body.appendChild(card);
-        };
+        var sub = /*[[${sub}]]*/ 'default';
         /*]]>*/
         </script>
+        <script src="game.js"></script>
     </head>
     <body>
         <h1>Game</h1>
-        <p th:text="${ 'Code :' + id}"></p>
-        <!-- <form action="/cards" method="post">
-        <input type="hidden" name="id" th:value="${id}"/>
-        <input type="hidden" name="dealer" th:value="${dealer}"/>
-        <input type="hidden" name="player" th:value="${player}"/>
-        <input type="submit" value="Draw Card"/>
-        </form> -->
+        <p th:text="${ 'Code: ' + id}"></p>
+        <div id="started">Game Not Started</div>
+        <h4>Your Cards:</h4>
+        <div id="cards"></div>
+        <h4>The Table:</h4>
+        <div id="table"></div>
+        <h4>Turn:</h4>
+        <div id="turn"></div>
+        <div id="play"></div>
+        <div id="winner"></div>
     </body>
 
 </html>

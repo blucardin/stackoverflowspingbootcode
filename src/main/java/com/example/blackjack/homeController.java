@@ -1,25 +1,28 @@
 package com.example.blackjack;
 
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 // import SimpMessagingTemplate
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.example.blackjack.Player.Status;
 
 import reactor.core.publisher.Flux;
 
+import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 
-import java.util.Map;
+import java.util.ArrayList;
 
 @CrossOrigin(origins = "*")
 @Controller
@@ -27,24 +30,7 @@ public class homeController {
 
     static Connection connection = null;
     static Statement statement = null;
-    public static volatile int engines = 0; // number of engines running
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void doSomethingAfterStartup() throws ClassNotFoundException, SQLException {  
-        // create a database connection
-        Class.forName("org.sqlite.JDBC");
-        connection = DriverManager.getConnection("jdbc:sqlite:database.db");
-        statement = connection.createStatement();
-        statement.setQueryTimeout(30);  // set timeout to 30 sec.
-
-        statement.executeUpdate("drop table if exists room");
-        // create room table with text locked, id int autoincrementing, and turn int
-        statement.executeUpdate("create table room (id integer primary key autoincrement, locked text not null, turn integer)");
-
-        statement.executeUpdate("drop table if exists player");
-        // create player table with text name, id int, and room_id int
-        statement.executeUpdate("create table player (id integer primary key, room_id integer)");
-      }
+    public static volatile ArrayList<Room> rooms = new ArrayList<Room>();    ; // number of engines running
 
     @GetMapping("/home")
     public String index() {
@@ -52,55 +38,319 @@ public class homeController {
     }
 
     @GetMapping("/create")
-    public String create(Model model) throws SQLException {
+    public String create(Model model, OAuth2AuthenticationToken identifyer){
         // create a new room in the database
         //statement.execute("insert into room (locked, turn) values('false', 0)", Statement.RETURN_GENERATED_KEYS);
         // get the new id
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
 
-        statement.executeUpdate("insert into room (locked, turn) values('false', 0)", Statement.RETURN_GENERATED_KEYS);
-        ResultSet rs = statement.getGeneratedKeys();
-        // }
-        System.out.println(rs.getString(1));
-        model.addAttribute("id", rs.getString(1));//rs.getInt("id"));
+        rooms.add(new Room(rooms.size(), sub));
+        model.addAttribute("id", rooms.size() - 1);//rs.getInt("id"));
         return "create";
     }
 
+    // create a post-only mapping to start the game
+    @GetMapping("/start")
+    public String start(Model model, String id, OAuth2AuthenticationToken identifyer) {
+
+        String roomID = id;
+        // get the dealer id
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+            if (rooms.get(i).id == Integer.parseInt(id) && rooms.get(i).dealersub.equals(sub)) {
+                rooms.get(i).locked = true;
+                rooms.get(i).engine.initializeGame();
+                model.addAttribute("id", roomID);
+                model.addAttribute("sub", sub);
+                return "start";
+            }
+        }
+        // if the room doesn't exist, return the home page
+        return "index"; // TODO: Create Error Page
+    }
+
+
     // create a mapping for the join page
     @GetMapping("/join")
-    public String join(Model model) throws SQLException {
+    public String join(Model model)  {
         // return the join page
         return "join";
     }
 
     // create a mapping for the room page with the id as a parameter
     @GetMapping("/game")
-    public String room(Model model, String id, OAuth2AuthenticationToken identifyer) throws SQLException {
+    public String room(Model model, String id, OAuth2AuthenticationToken identifyer)  {
         // get the room from the database
-        ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
-        // if the room exists
-        if (rs.next()) {
+        //ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
 
-            model.addAttribute("id", rs.getString("id"));
-            
-            model.addAttribute("sub", identifyer.getPrincipal().getAttributes().get("sub").toString());
+        for (int i = 0; i < rooms.size(); i++) {
 
-            return "game";
+            if (rooms.get(i).locked == false && rooms.get(i).id == Integer.parseInt(id)) {
+
+                String roomID = id;
+
+                String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+                String name = identifyer.getPrincipal().getAttributes().get("name").toString();
+
+                rooms.get(i).engine.addPlayer(sub, name, 0); // TODO: Betting System
+
+                //rooms.get(i).engine.addPlayer(sub, 0);
+                model.addAttribute("id", roomID);
+                
+                model.addAttribute("sub", sub);
+
+                // insert the player into the database
+                // statement.executeUpdate("insert into player (id, room_id) values('" + sub + "', " + roomID + ")");
+
+                return "game";
+            }
         }
         // if the room doesn't exist, return the home page
-        return "index";
+        return "index"; // TODO: Create Error Page
     }
 
-    @GetMapping("/output")
-    public String output() {
-        return "output";
+    @ResponseBody
+    @GetMapping(value = "/personalcards", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter personalcards(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+
+                for (int j = 0; j < players.size(); j++) {
+
+                    if (players.get(j).getName().equals(sub)) {
+
+                        ArrayList<Card> hand = players.get(j).getHand();
+                        String payload = "";
+                        
+                        if (hand.size() > 0) {
+                            payload = "{ \"cards\": [";
+                            // format the payload as an json array
+                            for (int k = 0; k < hand.size(); k++) {
+                                payload += "\"" + hand.get(k).getName() + "\"" ;
+                                if (k != hand.size() - 1) {
+                                    payload += ",";
+                                }
+                            }
+                            payload += "]}";
+                        }
+
+                        emitter.send(payload);
+                        emitter.complete();
+                        return emitter;
+                    }
+                }
+                emitter.send(""); // TODO: Configure these empty strings as error messages to be handled by the client
+                emitter.complete();
+                return emitter;
+            }
+        }
+        emitter.send("");
+        emitter.complete();
+        return emitter;
     }
 
-    // create a players mapping that uses server side events with Flux to send the players in the room to the client
-    @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> handle() {
-        return Flux.interval(Duration.ofSeconds(1))
-                .map(i -> "Hello, " + i + "!")
-                .doOnSubscribe(s -> System.out.println("Subscribed"))
-                .doOnComplete(() -> System.out.println("Completed"));
+    @ResponseBody
+    @GetMapping(value = "/getTable", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter getTable(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                ArrayList<Player> table = rooms.get(i).engine.getPlayers();
+                String payload = "";
+                JSONObject jo = new JSONObject();
+                int t = 1;
+
+                if (rooms.get(i).engine.getPlayers().get(0).getStatus() != Status.PLAYING) {
+                    JSONArray winner = new JSONArray();
+                    ArrayList<String> winners = CalculateWinner(id);
+                    for (String win : winners) {
+                        winner.put(win);
+                    }
+                    jo.put("Winner", winner);
+                    t = 0;
+                }
+                else {
+                    jo.put("Winner", "");
+                }
+                
+                JSONObject players = new JSONObject();
+                if (table.size() > 0) {
+                    for (int j = 0; j < table.size(); j++) {
+
+                        JSONObject player = new JSONObject();
+                        JSONArray cards = new JSONArray();
+                        
+                        if (t == 1){
+                            cards.put("unknown");
+                        }
+                        for (int k = t; k < table.get(j).getHand().size(); k++) {
+                            cards.put(table.get(j).getHand().get(k).getName());
+                        }
+
+                        player.put("Cards", cards);
+                        player.put("Username", table.get(j).getUsername());
+                        player.put("Status", table.get(j).getStatus());
+                        players.put(table.get(j).getName(), player);
+                    }
+                    jo.put("Players", players);
+                    payload = jo.toString();
+                }
+
+                emitter.send(payload);
+                emitter.complete();
+                return emitter;
+            }
+        }
+        emitter.send("");
+        emitter.complete();
+        return emitter;
     }
+
+    public ArrayList<String> CalculateWinner(String id){
+        // calculate the winner. if there are more than 1 winners, return all of them. If the dealer ties with a player, the dealer wins. The dealers hand is always the first player in the arraylist
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                ArrayList<String> winners = new ArrayList<String>();
+                int dealerScore = players.get(0).getPoints();
+                if (dealerScore > 21) {
+                    dealerScore = 0;
+                }
+                int playerScore = 0;
+                // get the max points of the players
+                for (int j = 1; j < players.size(); j++) {
+                    if (players.get(j).getPoints() > playerScore && players.get(j).getStatus() != Status.BUST) {
+                        playerScore = players.get(j).getPoints();
+                    }
+                }
+                // if the dealer has the max points, he wins
+                if (dealerScore >= playerScore) {
+                    winners.add(players.get(0).getName());
+                    return winners;
+                }
+                
+                // if the dealer doesn't have the max points, the players with the max points win
+                for (int j = 1; j < players.size(); j++) {
+                    if (players.get(j).getPoints() == playerScore) {
+                        winners.add(players.get(j).getName());
+                    }
+                }
+
+                return winners;
+            }
+        }
+        return null;
+        
+    }
+
+    @ResponseBody
+    @GetMapping(value = "/getTurn", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter getTurn(String id) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                if (rooms.get(i).locked == false) {
+                    emitter.send("");
+                    emitter.complete();
+                    return emitter;
+                }
+
+                int turn = rooms.get(i).turn;
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                String payload = players.get(players.size() - turn - 1).getName();
+
+                if (payload == "Dealer"){
+                    rooms.get(i).engine.dealerTurn();
+                }
+
+                emitter.send(payload);
+                emitter.complete();
+                return emitter;
+            }
+        }
+        emitter.send("");
+        emitter.complete();
+        return emitter;
+    }
+
+    @ResponseBody
+    @GetMapping(value = "/hit", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter hit(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                int turn = rooms.get(i).turn;
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                Player hittingplayer = players.get(players.size() - turn - 1);
+
+                if (hittingplayer.getName() == sub){
+                    if (hittingplayer.getStatus() == Status.PLAYING) {
+
+                        hittingplayer.hit(rooms.get(i).engine.dealCard());
+
+                        if (hittingplayer.getStatus() == Status.BUST) {
+                            rooms.get(i).turn++;
+                        }
+
+                        emitter.send("Hit Succsessful");
+                        emitter.complete();
+                        return emitter;
+                    }
+                }
+            }
+        }
+        emitter.send("Hit FAILUE");
+        emitter.complete();
+        return emitter;
+    }
+
+    @ResponseBody
+    @GetMapping(value = "/stand", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stand(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
+        String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
+
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                int turn = rooms.get(i).turn;
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                Player standingplayer = rooms.get(i).engine.getPlayers().get(players.size() - turn - 1);
+                if (standingplayer.getName() == sub){
+                    if (standingplayer.getStatus() == Status.PLAYING) {
+                        standingplayer.stand();
+                        rooms.get(i).turn++;
+                    }
+                }
+                break;
+            }
+        }
+
+        emitter.send("Stand Succsessful");
+        emitter.complete();
+        return emitter;
+    }
+
+    
 }

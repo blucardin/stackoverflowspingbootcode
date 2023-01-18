@@ -8,13 +8,13 @@
 <div id="output"></div>
 
 <script>
-    var source = new EventSource("/sse");
-    source.onmessage = function(event) {
-        var output = document.getElementById("output");
-        var para = document.createElement("p");
+    // write code to hit '/cards' endpoint and display the response in the div with id 'output
+    var eventSource = new EventSource("/cards");
+    eventSource.onmessage = function(event) {
         console.log(event.data);
-        para.innerHTML = event.data;
-        output.appendChild(para);
+        console.log(event);
+        console.log("YAYA");
+        document.getElementById("output").innerHTML += event.data + "<br>";
     };
 </script>
 
