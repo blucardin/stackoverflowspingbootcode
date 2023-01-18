@@ -83,10 +83,8 @@ public class homeController {
     public String room(Model model, String id, OAuth2AuthenticationToken identifyer)  {
         // get the room from the database
         //ResultSet rs = statement.executeQuery("select * from room where id = " + id + " AND locked = 'false'");
-        System.out.println("id: " + id);
 
         for (int i = 0; i < rooms.size(); i++) {
-            System.out.println("room id: " + rooms.get(i).id);
 
             if (rooms.get(i).locked == false && rooms.get(i).id == Integer.parseInt(id)) {
 
@@ -207,7 +205,6 @@ public class homeController {
                     }
                     jo.put("Players", players);
                     payload = jo.toString();
-                    System.out.println(payload);
                 }
 
                 emitter.send(payload);
@@ -267,7 +264,6 @@ public class homeController {
         for (int i = 0; i < rooms.size(); i++) {
 
             if (rooms.get(i).id == Integer.parseInt(id)) {
-                System.out.println("Made it to getMapping");
 
                 if (rooms.get(i).locked == false) {
                     emitter.send("");
@@ -279,7 +275,6 @@ public class homeController {
                 ArrayList<Player> players = rooms.get(i).engine.getPlayers();
                 String payload = players.get(players.size() - turn - 1).getName();
 
-                System.out.println("turn: " + payload);
                 if (payload == "Dealer"){
                     rooms.get(i).engine.dealerTurn();
                 }
