@@ -232,7 +232,7 @@ public class homeController {
                 int playerScore = 0;
                 // get the max points of the players
                 for (int j = 1; j < players.size(); j++) {
-                    if (players.get(j).getPoints() > playerScore) {
+                    if (players.get(j).getPoints() > playerScore && players.get(j).getStatus() != Status.BUST) {
                         playerScore = players.get(j).getPoints();
                     }
                 }

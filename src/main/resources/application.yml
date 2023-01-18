@@ -5,5 +5,5 @@ spring:
       client:
         registration:
           google:
-            client-id: 266730739760-10nk3cc439ih1nsapt3kb4mrgmarfgpk.apps.googleusercontent.com
-            client-secret: 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
+            client-id: 105302362673-qroi4lo2an0qghu8ac4r7lie3tc4cukl.apps.googleusercontent.com
+            client-secret: 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
