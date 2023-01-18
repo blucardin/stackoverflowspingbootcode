@@ -229,6 +229,9 @@ public class homeController {
                 ArrayList<Player> players = rooms.get(i).engine.getPlayers();
                 ArrayList<String> winners = new ArrayList<String>();
                 int dealerScore = players.get(0).getPoints();
+                if (dealerScore > 21) {
+                    dealerScore = 0;
+                }
                 int playerScore = 0;
                 // get the max points of the players
                 for (int j = 1; j < players.size(); j++) {

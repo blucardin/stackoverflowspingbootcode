@@ -30,7 +30,7 @@ var tableData = "";
 var source = new EventSource("/getTable?id=" + id);
         source.onmessage = function(event) {
 
-            if (event.data != "" && event.data != tableData) {
+            if (event.data != "" && JSON.parse(event.data) != tableData) {
                 tableData = JSON.parse(event.data);
                 console.log(tableData);
                 var parent = document.getElementById("table");
@@ -48,6 +48,23 @@ var source = new EventSource("/getTable?id=" + id);
                         }
                     }
                     parent.appendChild(div);
+                }
+
+                if (tableData["Winner"] != [""]) {
+                    console.log("Winner: " + tableData["Winner"][0]);
+                    var parent = document.getElementById("winner");
+                    var winningText = "";
+                    for (var i = 0; i < tableData["Winner"].length; i++) {
+                        if (i != 0) {
+                            winningText += " and ";
+                        }
+                        winningText += tableData["Players"][tableData["Winner"][i]]["Username"];
+                    }
+                    parent.innerHTML = `
+                    <h1>Winner: ${winningText}</h1>
+                    <button onclick="window.location.href='/'">Back to Home Screen</button>
+                    `
+                    document.body.appendChild(parent);
                 }
             }
             else {
