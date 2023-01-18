@@ -63,18 +63,18 @@ turn.onmessage = function(event) {
         console.log(turnData);
         var parent = document.getElementById("turn");
         parent.innerHTML = tableData[turnData]["Username"] + "'s Turn";
+        if (event.data == sub) {
+            var parent = document.getElementById("play");
+            var child = document.createElement("div");
+            child.innerHTML = `
+            <button onclick="hit()">Hit</button>
+            <button onclick="stand()">Stand</button>
+                `
+                parent.appendChild(child);
+        }
     }
     else {
         console.log("No turn yet");
-    }
-    if (event.data == sub) {
-        var parent = document.getElementById("play");
-        var child = document.createElement("div");
-        child.innerHTML = `
-        <button onclick="hit()">Hit</button>
-        <button onclick="stand()">Stand</button>
-            `
-            parent.appendChild(child);
     }
 }
 
@@ -91,7 +91,7 @@ function stand() {
     var stand = new EventSource("/stand?id=" + id);
     stand.onmessage = function(event) {
         console.log(event.data);
-        hit.close();
+        stand.close();
     }
     deletePlay()
 }
@@ -99,4 +99,5 @@ function stand() {
 function deletePlay() {
     var parent = document.getElementById("play");
     parent.innerHTML = "";
+    turnData = "";
 }
