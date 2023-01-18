@@ -212,9 +212,15 @@ public class homeController {
                     emitter.complete();
                     return emitter;
                 }
-                
+
                 int turn = rooms.get(i).turn;
-                String payload = rooms.get(i).engine.getPlayers().get(turn).getName();
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                String payload = players.get(players.size() - turn - 1).getName();
+
+                System.out.println("turn: " + payload);
+                if (payload == "Dealer"){
+                    rooms.get(i).engine.dealerTurn();
+                }
 
                 emitter.send(payload);
                 emitter.complete();
@@ -226,8 +232,10 @@ public class homeController {
         return emitter;
     }
 
-    @PostMapping("/hit")
-    public void hit(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+    @ResponseBody
+    @GetMapping(value = "/hit", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter hit(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
         String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
 
         for (int i = 0; i < rooms.size(); i++) {
@@ -235,19 +243,34 @@ public class homeController {
             if (rooms.get(i).id == Integer.parseInt(id)) {
 
                 int turn = rooms.get(i).turn;
-                Player hittingplayer = rooms.get(i).engine.getPlayers().get(turn);
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                Player hittingplayer = players.get(players.size() - turn - 1);
+
                 if (hittingplayer.getName() == sub){
                     if (hittingplayer.getStatus() == Status.PLAYING) {
 
-                        rooms.get(i).engine.getPlayers().get(turn).hit(rooms.get(i).engine.dealCard());
+                        hittingplayer.hit(rooms.get(i).engine.dealCard());
+
+                        if (hittingplayer.getStatus() == Status.BUST) {
+                            rooms.get(i).turn++;
+                        }
+
+                        emitter.send("Hit Succsessful");
+                        emitter.complete();
+                        return emitter;
                     }
                 }
             }
         }
+        emitter.send("Hit FAILUE");
+        emitter.complete();
+        return emitter;
     }
 
-    @PostMapping("/stand")
-    public void stand(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+    @ResponseBody
+    @GetMapping(value = "/stand", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stand(String id, OAuth2AuthenticationToken identifyer) throws IOException{
+        SseEmitter emitter = new SseEmitter();
         String sub = identifyer.getPrincipal().getAttributes().get("sub").toString();
 
         for (int i = 0; i < rooms.size(); i++) {
@@ -255,14 +278,21 @@ public class homeController {
             if (rooms.get(i).id == Integer.parseInt(id)) {
 
                 int turn = rooms.get(i).turn;
-                Player standingplayer = rooms.get(i).engine.getPlayers().get(turn);
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                Player standingplayer = rooms.get(i).engine.getPlayers().get(players.size() - turn - 1);
                 if (standingplayer.getName() == sub){
                     if (standingplayer.getStatus() == Status.PLAYING) {
-                        rooms.get(i).engine.getPlayers().get(turn).stand();
+                        standingplayer.stand();
+                        rooms.get(i).turn++;
                     }
                 }
+                break;
             }
         }
+
+        emitter.send("Stand Succsessful");
+        emitter.complete();
+        return emitter;
     }
 
     

@@ -57,7 +57,7 @@ var source = new EventSource("/getTable?id=" + id);
 // poll for the current turn and update the page with the username that is currently playing
 var turnData = "";
 var turn = new EventSource("/getTurn?id=" + id);
-turn.onmessage = function(event) {
+turn.onmessage = function(event) {    
     if (event.data != "" && event.data != turnData) {
         turnData = event.data;
         console.log(turnData);
@@ -67,4 +67,36 @@ turn.onmessage = function(event) {
     else {
         console.log("No turn yet");
     }
+    if (event.data == sub) {
+        var parent = document.getElementById("play");
+        var child = document.createElement("div");
+        child.innerHTML = `
+        <button onclick="hit()">Hit</button>
+        <button onclick="stand()">Stand</button>
+            `
+            parent.appendChild(child);
+    }
+}
+
+function hit() {
+    var hit = new EventSource("/hit?id=" + id);
+    hit.onmessage = function(event) {
+        console.log(event.data);
+        hit.close();
+    }
+    deletePlay()
+}
+
+function stand() {
+    var stand = new EventSource("/stand?id=" + id);
+    stand.onmessage = function(event) {
+        console.log(event.data);
+        hit.close();
+    }
+    deletePlay()
+}
+
+function deletePlay() {
+    var parent = document.getElementById("play");
+    parent.innerHTML = "";
 }

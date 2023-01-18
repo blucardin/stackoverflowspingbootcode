@@ -6,7 +6,7 @@ public class Room {
     public int id;
     public boolean locked;
     public String dealersub;
-    public int turn = 0;
+    public volatile int turn = 0;
 
     /**
      * Constructor for room class

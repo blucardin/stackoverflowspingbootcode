@@ -8,7 +8,7 @@
         <script th:inline="javascript">
         /*<![CDATA[*/
         var id = /*[[${id}]]*/ 'default';
-        var sub = new /*[[${sub}]]*/ 'default';
+        var sub = /*[[${sub}]]*/ 'default';
         /*]]>*/
         </script>
         <script src="game.js"></script>
@@ -23,6 +23,7 @@
         <div id="table"></div>
         <h4>Turn:</h4>
         <div id="turn"></div>
+        <div id="play"></div>
     </body>
 
 </html>

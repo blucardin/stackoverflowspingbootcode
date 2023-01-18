@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class BlackJackEngine {
-    private ArrayList<Player> players = new ArrayList<>(Arrays.asList(new Player("Dealer, ", "Dealer", 0)));
+    private ArrayList<Player> players = new ArrayList<>(Arrays.asList(new Player("Dealer", "Dealer", 0)));
     private ArrayList<Card> deck = new ArrayList<>();
 
     /**
