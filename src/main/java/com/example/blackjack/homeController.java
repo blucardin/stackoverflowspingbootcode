@@ -171,21 +171,43 @@ public class homeController {
                 ArrayList<Player> table = rooms.get(i).engine.getPlayers();
                 String payload = "";
                 JSONObject jo = new JSONObject();
+                int t = 1;
+
+                if (rooms.get(i).engine.getPlayers().get(0).getStatus() != Status.PLAYING) {
+                    JSONArray winner = new JSONArray();
+                    ArrayList<String> winners = CalculateWinner(id);
+                    for (String win : winners) {
+                        winner.put(win);
+                    }
+                    jo.put("Winner", winner);
+                    t = 0;
+                }
+                else {
+                    jo.put("Winner", "");
+                }
                 
+                JSONObject players = new JSONObject();
                 if (table.size() > 0) {
                     for (int j = 0; j < table.size(); j++) {
+
                         JSONObject player = new JSONObject();
                         JSONArray cards = new JSONArray();
-                        cards.put("unknown");
-                        for (int k = 1; k < table.get(j).getHand().size(); k++) {
+                        
+                        if (t == 1){
+                            cards.put("unknown");
+                        }
+                        for (int k = t; k < table.get(j).getHand().size(); k++) {
                             cards.put(table.get(j).getHand().get(k).getName());
                         }
+
                         player.put("Cards", cards);
                         player.put("Username", table.get(j).getUsername());
                         player.put("Status", table.get(j).getStatus());
-                        jo.put(table.get(j).getName(), player);
+                        players.put(table.get(j).getName(), player);
                     }
+                    jo.put("Players", players);
                     payload = jo.toString();
+                    System.out.println(payload);
                 }
 
                 emitter.send(payload);
@@ -198,6 +220,42 @@ public class homeController {
         return emitter;
     }
 
+    public ArrayList<String> CalculateWinner(String id){
+        // calculate the winner. if there are more than 1 winners, return all of them. If the dealer ties with a player, the dealer wins. The dealers hand is always the first player in the arraylist
+        for (int i = 0; i < rooms.size(); i++) {
+
+            if (rooms.get(i).id == Integer.parseInt(id)) {
+
+                ArrayList<Player> players = rooms.get(i).engine.getPlayers();
+                ArrayList<String> winners = new ArrayList<String>();
+                int dealerScore = players.get(0).getPoints();
+                int playerScore = 0;
+                // get the max points of the players
+                for (int j = 1; j < players.size(); j++) {
+                    if (players.get(j).getPoints() > playerScore) {
+                        playerScore = players.get(j).getPoints();
+                    }
+                }
+                // if the dealer has the max points, he wins
+                if (dealerScore >= playerScore) {
+                    winners.add(players.get(0).getName());
+                    return winners;
+                }
+                
+                // if the dealer doesn't have the max points, the players with the max points win
+                for (int j = 1; j < players.size(); j++) {
+                    if (players.get(j).getPoints() == playerScore) {
+                        winners.add(players.get(j).getName());
+                    }
+                }
+
+                return winners;
+            }
+        }
+        return null;
+        
+    }
+
     @ResponseBody
     @GetMapping(value = "/getTurn", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter getTurn(String id) throws IOException{
@@ -206,6 +264,7 @@ public class homeController {
         for (int i = 0; i < rooms.size(); i++) {
 
             if (rooms.get(i).id == Integer.parseInt(id)) {
+                System.out.println("Made it to getMapping");
 
                 if (rooms.get(i).locked == false) {
                     emitter.send("");

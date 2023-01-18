@@ -37,12 +37,13 @@ var source = new EventSource("/getTable?id=" + id);
                 // clear the table
                 parent.innerHTML = "";
 
-                for (var key in tableData) {
+                var players = tableData["Players"];
+                for (var key in players) {
                     var div = document.createElement("div");
-                    div.innerHTML = tableData[key]["Username"] + ": ";
-                    for (var i = 0; i < tableData[key]["Cards"].length; i++) {
-                        div.innerHTML += tableData[key]["Cards"][i];
-                        if (i != tableData[key]["Cards"].length - 1) {
+                    div.innerHTML = players[key]["Username"] + ": ";
+                    for (var i = 0; i < players[key]["Cards"].length; i++) {
+                        div.innerHTML += players[key]["Cards"][i];
+                        if (i != players[key]["Cards"].length - 1) {
                             div.innerHTML += ", ";
                         }
                     }
@@ -62,7 +63,7 @@ turn.onmessage = function(event) {
         turnData = event.data;
         console.log(turnData);
         var parent = document.getElementById("turn");
-        parent.innerHTML = tableData[turnData]["Username"] + "'s Turn";
+        parent.innerHTML = tableData["Players"][turnData]["Username"] + "'s Turn";
         if (event.data == sub) {
             var parent = document.getElementById("play");
             var child = document.createElement("div");
